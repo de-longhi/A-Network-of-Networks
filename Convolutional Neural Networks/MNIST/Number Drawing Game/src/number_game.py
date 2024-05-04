@@ -4,6 +4,9 @@ from PIL import Image, ImageDraw
 from pathlib import Path
 import torch
 from torch import nn
+import torchvision.transforms as transforms
+import matplotlib.pyplot as plt
+import time
 
 class CNN(nn.Module):
     
@@ -74,10 +77,24 @@ class GUI:
         self.draw = ImageDraw.Draw(self.image)
     def classify(self):
         PIC_DIR = Path(__file__).resolve().parent.parent / "tmp" / "drawing.png"
-        MODEL_DIR = Path(__file__).resolve().parent.parent / "models" / "CNN.pt"
+        MODEL_DIR = Path(__file__).resolve().parent.parent / "models" / "final_model.pth"
         self.save_drawing(PIC_DIR)
-        model = CNN().cuda()
-        model = torch.load(MODEL_DIR)
+        model = CNN().cpu()
+        model.load_state_dict(torch.load(MODEL_DIR))
+        model.eval()
+        image = Image.open(PIC_DIR)
+        tens = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Grayscale()
+        ])
+        input = (1-tens(image))*255 # type: ignore
+        transform = transforms.Compose([
+            transforms.Normalize((0.13066047430038452,), (0.30810782313346863,))
+        ])
+        input = transform(input).unsqueeze(0) # type: ignore
+        output = model(input)
+        probabilities = torch.argmax(output)
+        print(probabilities)
         
 
 def main():

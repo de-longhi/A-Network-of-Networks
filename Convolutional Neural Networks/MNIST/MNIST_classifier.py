@@ -1,12 +1,12 @@
-
-# onthou om n program te maak waarmee jy kan teken en dan se hy vir jou watse nommer dit is
-
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from torchvision.transforms import ToTensor
 import matplotlib.pyplot as plt
+from sklearn.datasets import fetch_openml
+from torch.utils.data import TensorDataset, DataLoader
+from tensorflow.keras.preprocessing.image import ImageDataGenerator # type: ignore
 
 
 def init_MNIST(download_data:bool, batch_size = 128) -> tuple[DataLoader, DataLoader]:
@@ -25,7 +25,6 @@ def init_MNIST(download_data:bool, batch_size = 128) -> tuple[DataLoader, DataLo
     train=True,
     download=download_data
     )
-
 
     mean = torch.true_divide((training_data.data), 255).float().mean().item()
     std = torch.true_divide((training_data.data), 255).float().std().item()
@@ -74,6 +73,7 @@ class CNN(nn.Module):
             nn.Linear(in_features=256, out_features=10)         
         )
         
+        
 
     def forward(self, x):
         x = self.features(x)
@@ -83,16 +83,62 @@ class CNN(nn.Module):
         x = self.classify(x)
         return x
     
+    def train_from_generator(self, batches, generator : ImageDataGenerator, X_train, y_train, test_dataloader):
+        device = self.device
+        loss_function = nn.CrossEntropyLoss()
+        optimizer = torch.optim.Adam(self.parameters(), lr = 0.001)
+                
+        X_train = X_train.view(60000, 28, 28)
+        X_train = X_train.unsqueeze(3)
+        
+        self.train() # type: ignore
+        i = 0
+        for X, y in generator.flow(X_train, y_train, batch_size = 512, shuffle = True):
+            i += 1
+            X = torch.tensor(X).squeeze(-1).unsqueeze(1)
+            X, y = X.to(device), torch.tensor(y).to(device)
+
+            # Compute prediction error
+            pred = self(X)
+
+            loss = loss_function(pred, y)
+
+            # Backpropagation
+            loss.backward()
+            optimizer.step()
+            optimizer.zero_grad()
+            
+            if i % 1000 == 0:
+                size = len(test_dataloader.dataset) # type: ignore
+                num_batches = len(test_dataloader)
+                self.eval()
+                test_loss, correct = 0, 0
+                with torch.no_grad():
+                    for X, y in test_dataloader:
+                        X, y = X.to(device).type(torch.float), y.to(device)
+                        X = X.view(-1, 28, 28)
+                        X = X.unsqueeze(1)
+                        pred = self(X) #sakjdfl
+                        test_loss += loss_function(pred, y).item()
+                        correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+                test_loss /= num_batches
+                correct /= size
+                print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+                
+            if i > batches:
+                break          
+        
     def train_from_dataset(self, epochs : int, train_dataloader : DataLoader, test_dataloader : DataLoader):
         
         device = self.device
         loss_function = nn.CrossEntropyLoss()
-        optimizer = torch.optim.Adam(self.parameters(), lr = 0.01)
+        optimizer = torch.optim.Adam(self.parameters(), lr = 0.001)
         for i in range(epochs):
             print(f"Epoch {i+1}\n")
             self.train() # type: ignore
             for batch, (X, y) in enumerate(train_dataloader): #here, batch is the number of the batch, and X and y are lists with the input out output values of that batch
                 X, y = X.to(device), y.to(device)
+                print(X.shape)
 
                 # Compute prediction error
                 pred = self(X)
