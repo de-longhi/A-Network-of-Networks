@@ -6,6 +6,9 @@ __pycache__/
 # My notes
 /notes
 
+# Image storage directory for CNN
+/Convolutional Neural Networks/MNIST/Number Drawing Game/tmp
+
 #vscode
 .vscode
 # C extensions
