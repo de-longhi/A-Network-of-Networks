@@ -1,12 +1,10 @@
 import tkinter as tk
-from tkinter import Canvas, Button, messagebox
+from tkinter import Canvas, Button
 from PIL import Image, ImageDraw
 from pathlib import Path
 import torch
 from torch import nn
 import torchvision.transforms as transforms
-import matplotlib.pyplot as plt
-import time
 
 class CNN(nn.Module):
     
