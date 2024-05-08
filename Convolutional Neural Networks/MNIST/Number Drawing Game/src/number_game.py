@@ -75,7 +75,7 @@ class GUI:
         self.draw = ImageDraw.Draw(self.image)
     def classify(self):
         PIC_DIR = Path(__file__).resolve().parent.parent / "tmp" / "drawing.png"
-        MODEL_DIR = Path(__file__).resolve().parent.parent / "models" / "final_model.pth"
+        MODEL_DIR = Path(__file__).resolve().parent.parent / "models" / "mnist_model.pth"
         self.save_drawing(PIC_DIR)
         model = CNN().cpu()
         model.load_state_dict(torch.load(MODEL_DIR))
@@ -90,6 +90,7 @@ class GUI:
             transforms.Normalize((0.13066047430038452,), (0.30810782313346863,))
         ])
         input = transform(input).unsqueeze(0) # type: ignore
+        print(input)
         output = model(input)
         probabilities = torch.argmax(output)
         print(probabilities)

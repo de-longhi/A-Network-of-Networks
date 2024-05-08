@@ -8,6 +8,8 @@ __pycache__/
 
 # Pictures from CNN's
 *.png
+*.jpg
+
 
 #vscode
 *.vscode
